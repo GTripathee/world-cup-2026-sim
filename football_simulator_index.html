@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentic World Cup 2026 Simulator</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --first-place: #27ae60;
+            --second-place: #2980b9;
+            --third-place: #f39c12;
+            --background: #1e1e1e;
+            --card-bg: #2d2d2d;
+            --text: #ffffff;
+            --border: #444;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        h1, h2, h3 { text-align: center; color: #fff; margin-top: 0;}
+        .instructions { text-align: center; font-size: 1rem; margin-bottom: 15px; color: #ccc; }
+
+        .btn-reset {
+            display: block; margin: 0 auto 15px auto; padding: 8px 16px;
+            background-color: #c0392b; color: white; border: none;
+            border-radius: 5px; cursor: pointer; font-weight: bold;
+        }
+        .btn-reset:hover { background-color: #e74c3c; }
+
+        .btn-action {
+            display: block; margin: 20px auto; padding: 12px 25px;
+            background-color: var(--first-place); color: white; border: none;
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s;
+        }
+        .btn-action:hover { background-color: #2ecc71; transform: translateY(-2px); }
+
+        /* Group Stage Styles */
+        .groups-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px; margin-bottom: 20px;
+        }
+
+        .group-card {
+            background: var(--card-bg); border-radius: 6px; padding: 10px;
+            border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .group-header {
+            font-weight: bold; text-align: center; border-bottom: 2px solid #555;
+            margin-bottom: 8px; padding-bottom: 4px; font-size: 1rem; color: #fff;
+        }
+
+        .team-btn {
+            display: block; width: 100%; padding: 8px; margin-bottom: 6px;
+            background: #3d3d3d; border: 1px solid var(--border); border-radius: 4px;
+            cursor: pointer; text-align: left; font-size: 0.9rem; color: white; transition: 0.2s;
+        }
+
+        .team-btn:hover { background: #4d4d4d; }
+        .team-btn.selected-1 { background: var(--first-place); border-color: var(--first-place); font-weight: bold; }
+        .team-btn.selected-2 { background: var(--second-place); border-color: var(--second-place); font-weight: bold; }
+        .team-btn.selected-3 { background: var(--third-place); border-color: var(--third-place); font-weight: bold; color: black;}
+        .team-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* 3rd Place Table */
+        #third-place-section { display: none; margin-top: 30px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .third-place-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+
+        /* Compact Symmetrical Bracket */
+        #bracket-section { display: none; margin-top: 30px; }
+        .bracket-board {
+            display: flex; justify-content: center; width: 100%; min-width: 1000px;
+            background: #111; padding: 20px 10px; border-radius: 8px; border: 1px solid #333;
+        }
+
+        .side { display: flex; width: 40%; }
+        .left-side { flex-direction: row; }
+        .right-side { flex-direction: row-reverse; }
+
+        .center-stage {
+            width: 20%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: #1a1a1a; border-left: 2px dashed #333; border-right: 2px dashed #333; padding: 10px 0;
+        }
+
+        .round { display: flex; flex-direction: column; justify-content: space-around; flex: 1; padding: 0 5px; }
+
+        .match {
+            background: #2a2a2a; border: 1px solid #444; border-radius: 6px;
+            margin: 6px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.5); overflow: hidden;
+        }
+
+        .team-slot {
+            padding: 8px 5px; font-size: 0.8rem; color: #888; text-align: center;
+            border-bottom: 1px solid #333; min-height: 16px; transition: 0.2s;
+            position: relative;
+        }
+        .team-slot:last-child { border-bottom: none; }
+        
+        .team-slot.filled { color: #fff; font-weight: bold; cursor: pointer; }
+        .team-slot.filled:hover { background-color: #444; }
+
+        .slot-label {
+            position: absolute; left: 5px; top: 50%; transform: translateY(-50%);
+            font-size: 0.65rem; color: #666; font-weight: normal;
+        }
+
+        .final-title { font-size: 0.85rem; font-weight: bold; color: #aaa; margin-bottom: 5px; letter-spacing: 1px; }
+        .final-match { width: 95%; text-align: center; margin-bottom: 20px; border-color: gold; }
+        
+        .bronze-match { width: 80%; text-align: center; border-color: #cd7f32; margin-bottom: 10px;}
+
+        #winner-slot {
+            background: linear-gradient(135deg, #f1c40f, #f39c12); color: black; font-size: 1.1rem; font-weight: bold;
+            border: 2px solid #e67e22; padding: 10px; border-radius: 6px; width: 85%; text-align: center; box-shadow: 0 0 15px rgba(241, 196, 15, 0.4);
+            margin-bottom: 25px;
+        }
+        #bronze-winner-slot {
+            background: linear-gradient(135deg, #e67e22, #d35400); color: white; font-size: 0.9rem; font-weight: bold;
+            border: 2px solid #a04000; padding: 8px; border-radius: 6px; width: 75%; text-align: center;
+        }
+
+        /* Sticky Status Footer */
+        .sticky-footer {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #222;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5); padding: 12px; text-align: center;
+            z-index: 1000; border-top: 3px solid var(--first-place); font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏆 Authentic 2026 World Cup Simulator</h1>
+    <button class="btn-reset" onclick="resetTournament()">Reset All Progress</button>
+
+    <div id="step1-section">
+        <div class="instructions">Phase 1: Click once for <b>1st Place (1️⃣)</b>. Click another team for <b>2nd Place (2️⃣)</b>.</div>
+        <div class="groups-grid" id="groups-grid"></div>
+        <button id="btn-to-phase2" class="btn-action" style="display:none;" onclick="startPhase2()">➡️ Proceed to Best 3rd Place Teams</button>
+    </div>
+
+    <div id="third-place-section">
+        <h2>Phase 2: Best 3rd Place Teams</h2>
+        <div class="instructions">Select exactly 8 teams to advance (Max 1 per group).</div>
+        <div class="third-place-grid" id="third-place-grid"></div>
+        <button id="btn-generate-bracket" class="btn-action" style="display:none;" onclick="generateBracket()">⚽ Generate Official Knockout Bracket</button>
+    </div>
+
+    <div id="bracket-section">
+        <h2>Phase 3: Official Knockout Stage</h2>
+        <div class="instructions" style="color: #fff;">Click the winner of each match to advance them to the center! Losers of the Semi-Final drop to the Bronze Final.</div>
+        
+        <div class="bracket-board">
+            <div class="side left-side" id="bracket-left"></div>
+            
+            <div class="center-stage">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/FIFA_World_Cup_Trophy.svg/100px-FIFA_World_Cup_Trophy.svg.png" style="height:60px; margin-bottom: 10px; opacity: 0.8;" alt="Trophy">
+                
+                <div class="final-title">CHAMPIONSHIP FINAL</div>
+                <div class="match final-match">
+                    <div class="team-slot" id="slot-final-1-1" onclick="advanceToWinner(this, 'gold')">Empty</div>
+                    <div class="team-slot" id="slot-final-1-2" onclick="advanceToWinner(this, 'gold')">Empty</div>
+                </div>
+                <div id="winner-slot">🏆 Champion</div>
+
+                <div class="final-title" style="margin-top:20px;">BRONZE FINAL (3rd Place)</div>
+                <div class="match bronze-match">
+                    <div class="team-slot" id="slot-bronze-1-1" onclick="advanceToWinner(this, 'bronze')">Empty</div>
+                    <div class="team-slot" id="slot-bronze-1-2" onclick="advanceToWinner(this, 'bronze')">Empty</div>
+                </div>
+                <div id="bronze-winner-slot">🥉 3rd Place</div>
+            </div>
+
+            <div class="side right-side" id="bracket-right"></div>
+        </div>
+    </div>
+</div>
+
+<div class="sticky-footer" id="status-bar">
+    <span id="status-text">Phase 1: Select 1st & 2nd per Group (0 / 24 Selected)</span>
+</div>
+
+<script>
+
+    const flags = {
+        'Mexico': '🇲🇽', 'South Africa': '🇿🇦', 'South Korea': '🇰🇷', 'Czechia': '🇨🇿',
+        'Canada': '🇨🇦', 'Bosnia & Herz.': '🇧🇦', 'Qatar': '🇶🇦', 'Switzerland': '🇨🇭',
+        'Brazil': '🇧🇷', 'Morocco': '🇲🇦', 'Haiti': '🇭🇹', 'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+        'USA': '🇺🇸', 'Paraguay': '🇵🇾', 'Australia': '🇦🇺', 'Türkiye': '🇹🇷',
+        'Germany': '🇩🇪', 'Curacao': '🇨🇼', 'Côte d\'Ivoire': '🇨🇮', 'Ecuador': '🇪🇨',
+        'Netherlands': '🇳🇱', 'Japan': '🇯🇵', 'Sweden': '🇸🇪', 'Tunisia': '🇹🇳',
+        'Belgium': '🇧🇪', 'Egypt': '🇪🇬', 'Iran': '🇮🇷', 'New Zealand': '🇳🇿',
+        'Spain': '🇪🇸', 'Cabo Verde': '🇨🇻', 'Saudi Arabia': '🇸🇦', 'Uruguay': '🇺🇾',
+        'France': '🇫🇷', 'Senegal': '🇸🇳', 'Iraq': '🇮🇶', 'Norway': '🇳🇴',
+        'Argentina': '🇦🇷', 'Algeria': '🇩🇿', 'Austria': '🇦🇹', 'Jordan': '🇯🇴',
+        'Portugal': '🇵🇹', 'DR Congo': '🇨🇩', 'Uzbekistan': '🇺🇿', 'Colombia': '🇨🇴',
+        'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Croatia': '🇭🇷', 'Ghana': '🇬🇭', 'Panama': '🇵🇦'
+    };
+    
+    const tournamentGroups = {
+        A: ['Mexico', 'South Africa', 'South Korea', 'Czechia'], B: ['Canada', 'Bosnia & Herz.', 'Qatar', 'Switzerland'],
+        C: ['Brazil', 'Morocco', 'Haiti', 'Scotland'], D: ['USA', 'Paraguay', 'Australia', 'Türkiye'],
+        E: ['Germany', 'Curacao', 'Côte d\'Ivoire', 'Ecuador'], F: ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
+        G: ['Belgium', 'Egypt', 'Iran', 'New Zealand'], H: ['Spain', 'Cabo Verde', 'Saudi Arabia', 'Uruguay'],
+        I: ['France', 'Senegal', 'Iraq', 'Norway'], J: ['Argentina', 'Algeria', 'Austria', 'Jordan'],
+        K: ['Portugal', 'DR Congo', 'Uzbekistan', 'Colombia'], L: ['England', 'Croatia', 'Ghana', 'Panama']
+    };
+
+    let standings = {
+        A: {first: null, second: null}, B: {first: null, second: null}, C: {first: null, second: null},
+        D: {first: null, second: null}, E: {first: null, second: null}, F: {first: null, second: null},
+        G: {first: null, second: null}, H: {first: null, second: null}, I: {first: null, second: null},
+        J: {first: null, second: null}, K: {first: null, second: null}, L: {first: null, second: null}
+    };
+    let selections3rd = [];
+    let phase = 1;
+
+    function init() {
+        buildGroups();
+        buildBracketHTML('left');
+        buildBracketHTML('right');
+        loadSavedData();
+        updateUI();
+    }
+
+    // --- PHASE 1 ---
+    function buildGroups() {
+        const grid = document.getElementById('groups-grid');
+        grid.innerHTML = ''; 
+        for (const [groupName, teams] of Object.entries(tournamentGroups)) {
+            const card = document.createElement('div');
+            card.className = 'group-card';
+            let teamButtons = teams.map(team => 
+                `<button class="team-btn" id="btn-t2-${clean(team)}" onclick="togglePosition(this, '${team}', '${groupName}')">${team}</button>`
+            ).join('');
+            card.innerHTML = `<div class="group-header">Group ${groupName}</div>${teamButtons}`;
+            grid.appendChild(card);
+        }
+    }
+
+    function togglePosition(btn, team, group) {
+        if (phase !== 1) return;
+        let st = standings[group];
+
+        if (st.first === team) {
+            st.first = null; btn.classList.remove('selected-1'); btn.innerHTML = team;
+        } else if (st.second === team) {
+            st.second = null; btn.classList.remove('selected-2'); btn.innerHTML = team;
+        } else {
+            if (!st.first) {
+                st.first = team; btn.classList.add('selected-1'); btn.innerHTML = "1️⃣ " + team;
+            } else if (!st.second) {
+                st.second = team; btn.classList.add('selected-2'); btn.innerHTML = "2️⃣ " + team;
+            } else {
+                alert(`Group ${group} is full! Deselect a team first.`);
+            }
+        }
+        updateUI(); saveState();
+    }
+
+    // --- PHASE 2 ---
+    function startPhase2() {
+        phase = 2;
+        document.getElementById('step1-section').style.opacity = '0.4';
+        document.querySelectorAll('#groups-grid .team-btn').forEach(b => b.disabled = true);
+        
+        const grid = document.getElementById('third-place-grid');
+        grid.innerHTML = '';
+        document.getElementById('third-place-section').style.display = 'block';
+        
+        for (const [groupName, teams] of Object.entries(tournamentGroups)) {
+            const available = teams.filter(t => t !== standings[groupName].first && t !== standings[groupName].second);
+            const card = document.createElement('div');
+            card.className = 'group-card';
+            let teamButtons = available.map(team => 
+                `<button class="team-btn" id="btn-3rd-${clean(team)}" onclick="toggle3rd(this, '${team}', '${groupName}')">${team}</button>`
+            ).join('');
+            card.innerHTML = `<div class="group-header">Group ${groupName} remaining</div>${teamButtons}`;
+            grid.appendChild(card);
+        }
+        
+        selections3rd.forEach(obj => {
+            const b = document.getElementById(`btn-3rd-${clean(obj.team)}`);
+            if(b) { b.classList.add('selected-3'); b.innerHTML = "⭐ " + obj.team; }
+        });
+        
+        document.getElementById('third-place-section').scrollIntoView({ behavior: 'smooth' });
+        updateUI();
+    }
+
+    function toggle3rd(btn, team, group) {
+        const existingIndex = selections3rd.findIndex(x => x.team === team);
+        if (existingIndex > -1) {
+            selections3rd.splice(existingIndex, 1);
+            btn.classList.remove('selected-3'); btn.innerHTML = team;
+        } else {
+            if (selections3rd.length >= 8) return alert("You have already selected 8 third-place teams.");
+            if (selections3rd.some(x => x.group === group)) return alert(`Max 1 team from Group ${group}.`);
+            selections3rd.push({team, group});
+            btn.classList.add('selected-3'); btn.innerHTML = "⭐ " + team;
+        }
+        updateUI(); saveState();
+    }
+
+    // --- DYNAMIC 3RD PLACE ALLOCATION ALGORITHM ---
+    function allocateThirdPlace(selected3rd) {
+        // The 8 group winners that face a 3rd-place team
+        const hostGroups = ['E', 'I', 'D', 'G', 'A', 'L', 'B', 'K'];
+        let allocatedTeams = [];
+        
+        function solve(slotIndex, usedIndices) {
+            if (slotIndex === 8) return true; // Successfully matched all 8!
+            const hostGroup = hostGroups[slotIndex];
+            
+            for (let i = 0; i < 8; i++) {
+                // Rule: A 3rd place team cannot play the winner of its own group
+                if (!usedIndices[i] && selected3rd[i].group !== hostGroup) {
+                    usedIndices[i] = true;
+                    allocatedTeams[slotIndex] = selected3rd[i].team;
+                    
+                    if (solve(slotIndex + 1, usedIndices)) return true; // Move to next slot
+                    
+                    // Backtrack if it leads to a dead end
+                    usedIndices[i] = false;
+                }
+            }
+            return false;
+        }
+        
+        const success = solve(0, []);
+        
+        // Safety fallback (mathematically impossible to fail with a degree-7 bipartite graph, but safe to have)
+        if (!success) allocatedTeams = selected3rd.map(x => x.team);
+        return allocatedTeams;
+    }
+
+
+    // --- PHASE 3 ---
+    const roundsMap = [{ id: 'r32', matches: 8 }, { id: 'r16', matches: 4 }, { id: 'qf', matches: 2 }, { id: 'sf', matches: 1 }];
+
+    function buildBracketHTML(side) {
+        const sideContainer = document.getElementById(`bracket-${side}`);
+        sideContainer.innerHTML = '';
+        
+        roundsMap.forEach((round, roundIndex) => {
+            let col = `<div class="round" id="col-${side}-${round.id}">`;
+            for(let i = 1; i <= round.matches; i++) {
+                col += `
+                    <div class="match">
+                        <div class="team-slot" id="slot-${side}-${round.id}-${i}-1" onclick="advanceBracket('${side}', ${roundIndex}, ${i}, this)"><span class="slot-label" id="lbl-${side}-${round.id}-${i}-1"></span><span class="t-name">Empty</span></div>
+                        <div class="team-slot" id="slot-${side}-${round.id}-${i}-2" onclick="advanceBracket('${side}', ${roundIndex}, ${i}, this)"><span class="slot-label" id="lbl-${side}-${round.id}-${i}-2"></span><span class="t-name">Empty</span></div>
+                    </div>
+                `;
+            }
+            col += `</div>`;
+            sideContainer.innerHTML += col;
+        });
+    }
+
+    function generateBracket() {
+        phase = 3;
+        document.getElementById('third-place-section').style.opacity = '0.4';
+        document.querySelectorAll('#third-place-grid .team-btn').forEach(b => b.disabled = true);
+        document.getElementById('bracket-section').style.display = 'block';
+
+        // Utilize the backtracking algorithm to generate the perfect, collision-free layout
+        let t3 = allocateThirdPlace(selections3rd); 
+        
+        const leftMatchups = [
+            { s1: standings.E.first, l1: "1E", s2: t3[0], l2: "3rd" },
+            { s1: standings.I.first, l1: "1I", s2: t3[1], l2: "3rd" },
+            { s1: standings.A.second, l1: "2A", s2: standings.B.second, l2: "2B" },
+            { s1: standings.F.first, l1: "1F", s2: standings.C.second, l2: "2C" },
+            { s1: standings.K.second, l1: "2K", s2: standings.L.second, l2: "2L" },
+            { s1: standings.H.first, l1: "1H", s2: standings.J.second, l2: "2J" },
+            { s1: standings.D.first, l1: "1D", s2: t3[2], l2: "3rd" },
+            { s1: standings.G.first, l1: "1G", s2: t3[3], l2: "3rd" }
+        ];
+
+        const rightMatchups = [
+            { s1: standings.C.first, l1: "1C", s2: standings.F.second, l2: "2F" },
+            { s1: standings.E.second, l1: "2E", s2: standings.I.second, l2: "2I" },
+            { s1: standings.A.first, l1: "1A", s2: t3[4], l2: "3rd" },
+            { s1: standings.L.first, l1: "1L", s2: t3[5], l2: "3rd" },
+            { s1: standings.J.first, l1: "1J", s2: standings.H.second, l2: "2H" },
+            { s1: standings.D.second, l1: "2D", s2: standings.G.second, l2: "2G" },
+            { s1: standings.B.first, l1: "1B", s2: t3[6], l2: "3rd" },
+            { s1: standings.K.first, l1: "1K", s2: t3[7], l2: "3rd" }
+        ];
+
+        populateSide('left', leftMatchups);
+        populateSide('right', rightMatchups);
+
+        saveState();
+        document.getElementById('bracket-section').scrollIntoView({ behavior: 'smooth' });
+        updateUI();
+    }
+
+    function populateSide(side, matchups) {
+        matchups.forEach((match, index) => {
+            let i = index + 1;
+            let slot1 = document.getElementById(`slot-${side}-r32-${i}-1`);
+            let slot2 = document.getElementById(`slot-${side}-r32-${i}-2`);
+            
+            document.getElementById(`lbl-${side}-r32-${i}-1`).innerText = match.l1;
+            document.getElementById(`lbl-${side}-r32-${i}-2`).innerText = match.l2;
+            
+            slot1.querySelector('.t-name').innerText = match.s1; slot1.classList.add('filled');
+            slot2.querySelector('.t-name').innerText = match.s2; slot2.classList.add('filled');
+            
+            slot1.querySelector('.t-name').style.marginLeft = "25px";
+            slot2.querySelector('.t-name').style.marginLeft = "25px";
+        });
+    }
+
+    function advanceBracket(side, roundIndex, matchIndex, slotElement) {
+        if (!slotElement.classList.contains('filled')) return;
+        const teamName = slotElement.querySelector('.t-name') ? slotElement.querySelector('.t-name').innerText : slotElement.innerText;
+        const nextRoundIndex = roundIndex + 1;
+
+        if (nextRoundIndex >= roundsMap.length) { 
+            const finalSlotNum = (side === 'left') ? 1 : 2;
+            document.getElementById(`slot-final-1-${finalSlotNum}`).innerText = teamName;
+            document.getElementById(`slot-final-1-${finalSlotNum}`).classList.add('filled');
+
+            const matchContainer = slotElement.parentElement;
+            const loserSlot = Array.from(matchContainer.children).find(el => el !== slotElement);
+            if(loserSlot && loserSlot.classList.contains('filled')) {
+                const loserName = loserSlot.querySelector('.t-name') ? loserSlot.querySelector('.t-name').innerText : loserSlot.innerText;
+                document.getElementById(`slot-bronze-1-${finalSlotNum}`).innerText = loserName;
+                document.getElementById(`slot-bronze-1-${finalSlotNum}`).classList.add('filled');
+            }
+            saveState();
+            return;
+        }
+
+        const nextRoundId = roundsMap[nextRoundIndex].id;
+        const nextMatchIndex = Math.ceil(matchIndex / 2);
+        const nextSlotNum = (matchIndex % 2 !== 0) ? 1 : 2;
+
+        const nextSlot = document.getElementById(`slot-${side}-${nextRoundId}-${nextMatchIndex}-${nextSlotNum}`);
+        nextSlot.innerHTML = `<span class="t-name">${teamName}</span>`;
+        nextSlot.classList.add('filled');
+        saveState();
+    }
+
+    function advanceToWinner(slotElement, type) {
+        if (!slotElement.classList.contains('filled')) return;
+        const targetId = type === 'gold' ? 'winner-slot' : 'bronze-winner-slot';
+        const prefix = type === 'gold' ? '🏆 ' : '🥉 ';
+        document.getElementById(targetId).innerText = prefix + slotElement.innerText;
+        saveState();
+    }
+
+    // --- UTILS & STATE ---
+    function clean(str) { return str.replace(/[^a-zA-Z0-9]/g, ''); }
+
+    function updateUI() {
+        let totalT2 = 0;
+        for(let g in standings) {
+            if(standings[g].first) totalT2++;
+            if(standings[g].second) totalT2++;
+        }
+        
+        const btnPhase2 = document.getElementById('btn-to-phase2');
+        const btnBracket = document.getElementById('btn-generate-bracket');
+        const statusText = document.getElementById('status-text');
+        const statusBar = document.getElementById('status-bar');
+
+        if (phase === 1) {
+            statusText.innerText = `Phase 1: Select 1st & 2nd per Group (${totalT2} / 24 Selected)`;
+            statusText.style.color = totalT2 === 24 ? '#2ecc71' : '#e74c3c';
+            btnPhase2.style.display = totalT2 === 24 ? 'block' : 'none';
+            statusBar.style.borderTopColor = totalT2 === 24 ? '#2ecc71' : 'var(--first-place)';
+        } else if (phase === 2) {
+            statusText.innerText = `Phase 2: Select Best 3rd Place Teams (${selections3rd.length} / 8 Selected)`;
+            statusText.style.color = selections3rd.length === 8 ? '#2ecc71' : '#e74c3c';
+            btnBracket.style.display = selections3rd.length === 8 ? 'block' : 'none';
+        } else if (phase === 3) {
+            statusText.innerText = "Phase 3: Knockout Stage - Click teams to advance!";
+            statusText.style.color = '#fff';
+            statusBar.style.borderTopColor = 'gold';
+        }
+    }
+
+    function saveState() {
+        const slotsData = {};
+        document.querySelectorAll('.team-slot').forEach(s => {
+            slotsData[s.id] = { html: s.innerHTML, isFilled: s.classList.contains('filled') };
+        });
+        const winText = document.getElementById('winner-slot').innerText;
+        const bronzeText = document.getElementById('bronze-winner-slot').innerText;
+
+        localStorage.setItem('wc2026_auth_save', JSON.stringify({
+            phase, standings, selections3rd, slotsData, winText, bronzeText
+        }));
+    }
+
+    function loadSavedData() {
+        const data = JSON.parse(localStorage.getItem('wc2026_auth_save'));
+        if (!data) return;
+
+        standings = data.standings;
+        selections3rd = data.selections3rd;
+        
+        for(const grp in standings) {
+            if(standings[grp].first) {
+                const b = document.getElementById(`btn-t2-${clean(standings[grp].first)}`);
+                if(b) { b.classList.add('selected-1'); b.innerHTML = "1️⃣ " + standings[grp].first; }
+            }
+            if(standings[grp].second) {
+                const b = document.getElementById(`btn-t2-${clean(standings[grp].second)}`);
+                if(b) { b.classList.add('selected-2'); b.innerHTML = "2️⃣ " + standings[grp].second; }
+            }
+        }
+
+        if (data.phase >= 2) startPhase2();
+        if (data.phase === 3) {
+            phase = 3;
+            document.getElementById('third-place-section').style.opacity = '0.4';
+            document.querySelectorAll('#third-place-grid .team-btn').forEach(b => b.disabled = true);
+            document.getElementById('bracket-section').style.display = 'block';
+            
+            for (const [id, slotData] of Object.entries(data.slotsData)) {
+                const el = document.getElementById(id);
+                if (el && slotData.isFilled) {
+                    el.innerHTML = slotData.html;
+                    el.classList.add('filled');
+                }
+            }
+            document.getElementById('winner-slot').innerText = data.winText || "🏆 Champion";
+            document.getElementById('bronze-winner-slot').innerText = data.bronzeText || "🥉 3rd Place";
+        }
+    }
+
+    function resetTournament() {
+        if(confirm("Erase all progress?")) {
+            localStorage.removeItem('wc2026_auth_save');
+            location.reload();
+        }
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
